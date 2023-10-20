@@ -25,7 +25,33 @@ def ScaleFeatures(x):
     return x_scaled, mean, stdev
 
 
-def CalculateLoss(x, y, w, b):
+def CalculateLoss_Classification(x, y, w, b):
+    """
+    Calculates the loss and cost using the provided sigmoid function.
+
+    Args:
+        x: Input values.
+        y: Target values.
+        w: Weight values.
+        b: Bias value.
+
+    Returns:
+        Tuple: loss and cost values.
+    """
+    sigmoid = lambda x, w, b : 1 / (1 + np.exp(-1 * (np.dot(x, w) + b) ) )
+    
+    upper_half = - np.log(sigmoid(x, w, b))
+    lower_half = - np.log(1 - sigmoid(x, w, b))
+
+    loss = sigmoid(x, w, b) - y
+
+    cost = np.dot(y, upper_half) + np.dot((1 - y),lower_half)
+    cost = np.sum(cost)
+
+    return loss, cost
+
+
+def CalculateLoss_Regression(x, y, w, b):
     """
     Calculate the loss and cost for a given set of inputs and parameters.
 
@@ -50,11 +76,14 @@ def CalculateLoss(x, y, w, b):
 
 
 
-def CalculateGradient(x, y, w, b):
+def CalculateGradient(x, y, w, b, method = "regression"):
     m = x.shape[0]  # Number of training instances
 
     # Calculate the loss and cost using the CalculateLoss function
-    loss, cost = CalculateLoss(x, y, w, b)
+    if method == "regression":
+        loss, cost = CalculateLoss_Regression(x, y, w, b)
+    else:
+        loss, cost = CalculateLoss_Classification(x, y, w, b)
 
     # Calculate the gradients of the parameter values by performing a dot product of the loss and input features
     dJ_dw = np.dot(loss, x) / m
@@ -66,7 +95,7 @@ def CalculateGradient(x, y, w, b):
 
 
 
-def GD(x, y, iterations = 1000, alpha = 1e-9):
+def GD(x, y, iterations = 1000, alpha = 1e-9, method="regression"):
     """
     Performs gradient descent optimization to minimize the cost function and optimize the parameters.
 
@@ -75,11 +104,11 @@ def GD(x, y, iterations = 1000, alpha = 1e-9):
     - y: Target values, a 1D numpy array where each element represents the target value for a training instance.
     - num_iterations: Number of iterations, an integer value specifying the number of times the gradient descent update will be performed.
     - alpha: Learning rate, a scalar value that determines the step size of the gradient descent update.
-    
+    - method: Which cost function to use, linear or sigmoid - ["regression","classification"]
+
     Returns:
     - w, b: Learned parameters, a 1D numpy array of size (num_features + 1) containing the optimized parameter values.
     - log: List of cost function values, corresponding gradients and weights with biases
-
     """
 
     # Generate initial weights
@@ -95,7 +124,7 @@ def GD(x, y, iterations = 1000, alpha = 1e-9):
     for i in range(iterations):
 
         # Calculate gradients
-        dJ_dw, dJ_db, cost = CalculateGradient(x, y, w, b)
+        dJ_dw, dJ_db, cost = CalculateGradient(x, y, w, b, method = method)
 
         # Log the values
         log.append([i, w, b, cost, dJ_dw, dJ_db])
